@@ -1,21 +1,50 @@
-import React, {useState} from "react";
-import TodoList from "./TodoList";
+import React, { useState, useRef, useEffect } from 'react';
+import TodoList from './TodoList'
+const { v4: uuidv4 } = require('uuid');
+
+const LOCAL_STORAGE_KEY = 'todoApp.todos'
 
 function App() {
-  // Calling the useState func to set default state of app when it starts
-  // This function returns an array
-  // We are basically destructuring the array
-  const [todos, setTodos] = useState([{id: 1, name: 'Todo 1', complete: false}])
+  const [todos, setTodos] = useState([])
+  const todoNameRef = useRef()
+
+  useEffect(() => {
+    const storedTodos = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY))
+    if (storedTodos) setTodos(storedTodos)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(todos))
+  }, [todos])
+
+  function toggleTodo(id) {
+    const newTodos = [...todos]
+    const todo = newTodos.find(todo => todo.id === id)
+    todo.complete = !todo.complete
+    setTodos(newTodos)
+  }
+
+  function handleAddTodo(e) {
+    const name = todoNameRef.current.value
+    if (name === '') return
+    setTodos(prevTodos => {
+      return [...prevTodos, { id: uuidv4(), name: name, complete: false}]
+    })
+    todoNameRef.current.value = null
+  }
+
+  function handleClearTodos() {
+    const newTodos = todos.filter(todo => !todo.complete)
+    setTodos(newTodos)
+  }
+
   return (
-    // Passing the useState here
-    // We have a prop todos and we pass it
     <>
-    <TodoList todos={todos}/>
-    <input type="text" />
-    <button>Add todo</button>
-    <button>Clear</button>
-    <div>0 left to do</div>
-    
+      <TodoList todos={todos} toggleTodo={toggleTodo} />
+      <input ref={todoNameRef} type="text" />
+      <button onClick={handleAddTodo}>Add Todo</button>
+      <button onClick={handleClearTodos}>Clear Complete</button>
+      <div>{todos.filter(todo => !todo.complete).length} left to do</div>
     </>
   )
 }
